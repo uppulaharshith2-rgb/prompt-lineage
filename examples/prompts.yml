@@ -1,0 +1,23 @@
+# prompts.yml -- prompt-freshness manifest, reused here as prompt-lineage's
+# source-of-truth for which markdown files in this repo are "real" prompts.
+#
+# prompt-lineage reads:
+#   - this file               (which prompts exist, what model, freshness thresholds)
+#   - .prompt-freshness/state.json  (last-evaluated timestamps, if any)
+#   - evals/*.yml             (which eval suites cover which prompts)
+#   - src/*.py via AST        (which functions wrap which prompts behind a contract)
+
+defaults:
+  warn_after: 30d
+  error_after: 90d
+
+prompts:
+  - path: prompts/support_triage.md
+    model: claude-sonnet-4-6
+    warn_after: 14d
+    error_after: 30d
+
+  - path: prompts/extract_invoice.md
+    model: claude-haiku-4-5
+    warn_after: 7d
+    error_after: 21d

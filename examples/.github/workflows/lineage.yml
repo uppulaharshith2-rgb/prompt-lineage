@@ -1,0 +1,34 @@
+name: prompt-lineage
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  lineage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history so we can `git worktree add` the base ref.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install prompt-lineage
+        run: pip install prompt-lineage
+
+      - name: Run lineage diff and comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m prompt_lineage.github_action \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --base "${{ github.base_ref }}" \
+            --repo-root "."

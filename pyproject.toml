@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-lineage"
+version = "0.1.0"
+description = "dbt-docs for prompts. Lineage graph: prompts -> eval suites -> contracts -> callers. CLI emits lineage.json + a static HTML navigation site."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Harshith Uppula", email = "uppula.harshith2@gmail.com" }]
+keywords = ["llm", "prompts", "lineage", "dbt", "docs", "governance", "anthropic", "claude"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "click>=8.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+rich = ["rich>=13.0"]
+dev = ["pytest>=7.0", "rich>=13.0"]
+
+[project.scripts]
+prompt-lineage = "prompt_lineage.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/uppulaharshith2-rgb/prompt-lineage"
+Issues = "https://github.com/uppulaharshith2-rgb/prompt-lineage/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+prompt_lineage = ["render/templates/*.j2", "render/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"

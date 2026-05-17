@@ -1,0 +1,204 @@
+{% extends "_base.html.j2" %}
+{% block body %}
+
+<div class="counts">
+  <div class="count"><span class="num">{{ counts.prompts }}</span><span class="label">prompts</span></div>
+  <div class="count"><span class="num">{{ counts.suites }}</span><span class="label">eval suites</span></div>
+  <div class="count"><span class="num">{{ counts.contracts }}</span><span class="label">contracts</span></div>
+  <div class="count"><span class="num">{{ counts.uncovered_prompts }}</span><span class="label">uncovered</span></div>
+  <div class="count"><span class="num">{{ counts.unenforced_prompts }}</span><span class="label">unenforced</span></div>
+</div>
+
+<div class="controls">
+  <input id="search" type="search" placeholder="search prompts, suites, contracts..." aria-label="search">
+  <div class="filters" role="tablist">
+    <button class="filter active" data-filter="all">all</button>
+    <button class="filter" data-filter="fresh">fresh</button>
+    <button class="filter" data-filter="warning">warning</button>
+    <button class="filter" data-filter="stale">stale</button>
+    <button class="filter" data-filter="unevaluated">unevaluated</button>
+    <button class="filter" data-filter="uncovered">uncovered</button>
+    <button class="filter" data-filter="unenforced">unenforced</button>
+  </div>
+</div>
+
+<table class="lineage" id="prompts-table">
+  <thead>
+    <tr>
+      <th data-sort="name">prompt <span class="sort-indicator"></span></th>
+      <th data-sort="model">model <span class="sort-indicator"></span></th>
+      <th data-sort="suites">eval suites <span class="sort-indicator"></span></th>
+      <th data-sort="contracts">contracts <span class="sort-indicator"></span></th>
+      <th data-sort="status">freshness <span class="sort-indicator"></span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in prompts %}
+    <tr
+      data-name="{{ p.id }}"
+      data-model="{{ p.model_alias or '' }}"
+      data-suites="{{ p.evaluated_by | length }}"
+      data-contracts="{{ p.enforced_by | length }}"
+      data-status="{{ (p.freshness.status if p.freshness else 'unevaluated') }}"
+      data-uncovered="{{ '1' if not p.evaluated_by else '0' }}"
+      data-unenforced="{{ '1' if not p.enforced_by else '0' }}"
+      data-search="{{ (p.id ~ ' ' ~ (p.model_alias or '') ~ ' ' ~ (p.evaluated_by | join(' ')) ~ ' ' ~ (p.enforced_by | join(' '))) | lower }}"
+    >
+      <td colspan="5">
+        <details class="row-detail">
+          <summary>
+            <table style="width:100%;border:none;background:none"><tr style="background:none">
+              <td class="name" style="border:none;padding:0;width:35%"><a href="prompts/{{ p.id | replace('/', '__') }}.html">{{ p.id }}</a></td>
+              <td class="model" style="border:none;padding:0;width:18%">{{ p.model_alias or '-' }}</td>
+              <td class="count-cell {{ 'has' if p.evaluated_by else 'none' }}" style="border:none;padding:0;width:14%">{{ p.evaluated_by | length }}</td>
+              <td class="count-cell {{ 'has' if p.enforced_by else 'none' }}" style="border:none;padding:0;width:14%">{{ p.enforced_by | length }}</td>
+              <td style="border:none;padding:0">
+                {% if p.freshness and p.freshness.status %}
+                  <span class="status status-{{ p.freshness.status }}">{{ p.freshness.status }}</span>
+                {% else %}
+                  <span class="status status-unevaluated">unevaluated</span>
+                {% endif %}
+              </td>
+            </tr></table>
+          </summary>
+          <dl class="detail-grid">
+            <dt>path</dt><dd>{{ p.path }}</dd>
+            {% if p.last_modified %}
+            <dt>modified</dt><dd>{{ p.last_modified }}</dd>
+            {% endif %}
+            {% if p.evaluated_by %}
+            <dt>eval suites</dt>
+            <dd><ul>{% for s in p.evaluated_by %}<li><a href="#suite-{{ s | replace('/', '__') }}">{{ s }}</a></li>{% endfor %}</ul></dd>
+            {% endif %}
+            {% if p.enforced_by %}
+            <dt>contracts</dt>
+            <dd><ul>{% for c in p.enforced_by %}<li><a href="#contract-{{ c | replace('/', '__') | replace(':', '--') }}">{{ c }}</a></li>{% endfor %}</ul></dd>
+            {% endif %}
+            {% if p.freshness %}
+            <dt>warn after</dt><dd>{{ p.freshness.warn_after or '-' }}</dd>
+            <dt>error after</dt><dd>{{ p.freshness.error_after or '-' }}</dd>
+            <dt>last evaluated</dt><dd>{{ p.freshness.last_evaluated or 'never' }}</dd>
+            {% endif %}
+          </dl>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+    {% if not prompts %}
+    <tr><td colspan="5"><div class="empty">no prompts found in this scan root.</div></td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+{% if suites %}
+<h2 class="section-header">eval suites</h2>
+<table class="lineage">
+  <thead><tr><th>suite</th><th>covers</th><th>cases</th><th>assertions</th></tr></thead>
+  <tbody>
+    {% for s in suites %}
+    <tr id="suite-{{ s.id | replace('/', '__') }}">
+      <td class="name">{{ s.id }}</td>
+      <td class="count-cell {{ 'has' if s.covers_prompts else 'none' }}">
+        {% if s.covers_prompts %}{{ s.covers_prompts | join(', ') }}{% else %}-{% endif %}
+      </td>
+      <td class="count-cell">{{ s.cases }}</td>
+      <td class="count-cell">{{ s.assertions }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if contracts %}
+<h2 class="section-header">contracts</h2>
+<table class="lineage">
+  <thead><tr><th>contract</th><th>wraps prompt</th><th>schema</th><th>on violation</th></tr></thead>
+  <tbody>
+    {% for c in contracts %}
+    <tr id="contract-{{ c.id | replace('/', '__') | replace(':', '--') }}">
+      <td class="name">{{ c.id }}</td>
+      <td class="count-cell {{ 'has' if c.wraps_prompt else 'none' }}">{{ c.wraps_prompt or '-' }}</td>
+      <td class="count-cell {{ 'has' if c.schema_ref else 'none' }}">{{ c.schema_ref or '-' }}</td>
+      <td class="count-cell">{{ c.on_violation or '-' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// prompt-lineage: vanilla sort+filter. ~75 lines. No deps.
+(function () {
+  var table = document.getElementById("prompts-table");
+  if (!table) return;
+  var tbody = table.tBodies[0];
+  var rows = Array.prototype.slice.call(tbody.rows);
+  var headers = table.querySelectorAll("th[data-sort]");
+  var input = document.getElementById("search");
+  var filters = document.querySelectorAll(".filter");
+  var activeFilter = "all";
+  var sortKey = null;
+  var sortDir = 1;
+
+  function getVal(row, key) {
+    if (key === "suites" || key === "contracts") {
+      return parseInt(row.getAttribute("data-" + key), 10) || 0;
+    }
+    return (row.getAttribute("data-" + key) || "").toLowerCase();
+  }
+
+  function applySort() {
+    if (!sortKey) return;
+    rows.sort(function (a, b) {
+      var va = getVal(a, sortKey);
+      var vb = getVal(b, sortKey);
+      if (va < vb) return -1 * sortDir;
+      if (va > vb) return 1 * sortDir;
+      return 0;
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+  }
+
+  function applyFilter() {
+    var q = (input.value || "").trim().toLowerCase();
+    rows.forEach(function (r) {
+      var matchesQuery = !q || r.getAttribute("data-search").indexOf(q) !== -1;
+      var matchesFilter = true;
+      if (activeFilter === "fresh" || activeFilter === "warning"
+          || activeFilter === "stale" || activeFilter === "unevaluated") {
+        matchesFilter = r.getAttribute("data-status") === activeFilter;
+      } else if (activeFilter === "uncovered") {
+        matchesFilter = r.getAttribute("data-uncovered") === "1";
+      } else if (activeFilter === "unenforced") {
+        matchesFilter = r.getAttribute("data-unenforced") === "1";
+      }
+      r.style.display = (matchesQuery && matchesFilter) ? "" : "none";
+    });
+  }
+
+  headers.forEach(function (h) {
+    h.addEventListener("click", function () {
+      var key = h.getAttribute("data-sort");
+      if (sortKey === key) { sortDir = -sortDir; } else { sortKey = key; sortDir = 1; }
+      headers.forEach(function (hh) { hh.classList.remove("sorted-asc", "sorted-desc"); });
+      h.classList.add(sortDir > 0 ? "sorted-asc" : "sorted-desc");
+      applySort();
+    });
+  });
+
+  filters.forEach(function (b) {
+    b.addEventListener("click", function () {
+      filters.forEach(function (bb) { bb.classList.remove("active"); });
+      b.classList.add("active");
+      activeFilter = b.getAttribute("data-filter");
+      applyFilter();
+    });
+  });
+
+  if (input) input.addEventListener("input", applyFilter);
+})();
+</script>
+{% endblock %}

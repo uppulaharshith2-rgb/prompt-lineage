@@ -1,0 +1,40 @@
+# dbt-eval-shape suite. prompt-lineage cares about:
+#   - `prompt:`     -- which prompt this covers
+#   - `model:`      -- model alias the suite ran against
+#   - `cases:`      -- count of cases
+#   - assertions    -- counted across cases
+#
+# In a real dbt-eval setup you'd add `assertions:` lists per case;
+# we keep them here so the lineage view shows 5 assertions covering 2 cases.
+
+name: support_triage
+description: Classify incoming support messages into {refund, bug, feature}.
+prompt: ../prompts/support_triage.md
+model: claude-sonnet-4-6
+
+cases:
+  - id: refund_request
+    input: "I want my money back for the subscription I bought yesterday."
+    assertions:
+      - regex_match:
+          field: category
+          pattern: "^(refund|bug|feature)$"
+      - json_schema:
+          schema:
+            type: object
+            required: [category, confidence, rationale]
+
+  - id: bug_report
+    input: "Login page throws 500 error when I click submit."
+    assertions:
+      - regex_match:
+          field: category
+          pattern: "^(refund|bug|feature)$"
+      - json_schema:
+          schema:
+            type: object
+            required: [category, confidence, rationale]
+      - faithful:
+          to: input
+          claim_field: rationale
+          threshold: 0.5

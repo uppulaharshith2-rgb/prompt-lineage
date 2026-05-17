@@ -1,0 +1,16 @@
+# Second suite. Demonstrates a different model alias on a different prompt --
+# the lineage view should render two rows, each pointing at one suite.
+
+name: extract_invoice
+description: Extract invoice fields from PDF text.
+prompt: ../prompts/extract_invoice.md
+model: claude-haiku-4-5
+
+cases:
+  - id: usd_simple
+    input: "Acme Inc. Invoice #1234. Total: $99.00. Issued 03/15/2026."
+    assertions:
+      - json_schema:
+          schema:
+            type: object
+            required: [vendor, invoice_number, total_amount, currency, issue_date]
