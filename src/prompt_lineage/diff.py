@@ -21,26 +21,18 @@ from prompt_lineage.render.json import to_dict
 
 @dataclass
 class _Change:
-    """Base shape for add/remove/modify entries."""
-
+    """Base: added | removed | modified entry."""
     id: str
-    kind: str  # added | removed | modified
+    kind: str
     field_changes: dict[str, tuple] = field(default_factory=dict)
 
 
 @dataclass
-class PromptChange(_Change):
-    pass
-
-
+class PromptChange(_Change): pass  # noqa: E701
 @dataclass
-class SuiteChange(_Change):
-    pass
-
-
+class SuiteChange(_Change): pass  # noqa: E701
 @dataclass
-class ContractChange(_Change):
-    pass
+class ContractChange(_Change): pass  # noqa: E701
 
 
 @dataclass
@@ -53,11 +45,7 @@ class DiffReport:
 
     @property
     def total_changes(self) -> int:
-        return (
-            len(self.prompt_changes)
-            + len(self.suite_changes)
-            + len(self.contract_changes)
-        )
+        return len(self.prompt_changes) + len(self.suite_changes) + len(self.contract_changes)
 
     @property
     def has_changes(self) -> bool:
