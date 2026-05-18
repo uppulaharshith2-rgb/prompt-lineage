@@ -37,6 +37,7 @@ prompt-lineage = "prompt_lineage.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/uppulaharshith2-rgb/prompt-lineage"
+Repository = "https://github.com/uppulaharshith2-rgb/prompt-lineage"
 Issues = "https://github.com/uppulaharshith2-rgb/prompt-lineage/issues"
 
 [tool.setuptools.packages.find]
